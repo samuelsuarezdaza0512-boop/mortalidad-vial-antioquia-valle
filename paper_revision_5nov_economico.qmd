@@ -1,0 +1,198 @@
+---
+title: "Mortalidad vial, pérdida de capital humano y mercado de seguros de automóviles en Antioquia y Valle del Cauca, 2016–2024"
+author: "Samuel Suárez"
+date: "noviembre de 2026"
+lang: es
+format:
+  pdf:
+    pdf-engine: xelatex
+    documentclass: article
+    geometry: margin=2.2cm
+    mainfont: "Times New Roman"
+    fontsize: 10.5pt
+    number-sections: true
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage{setspace}
+        \setstretch{1.08}
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{caption}
+        \captionsetup{font=small}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(stringr)
+
+# Se espera que el archivo se encuentre en datos/
+archivo_mortalidad <- "datos/Datos_Antioquia_ValleDelCauca.xlsx"
+archivo_complementario <- "datos/Datos_Siniestros_Viales_v2.xlsx"
+```
+
+**Repositorio reproducible:** https://github.com/samuelsuarezdaza0512-boop/mortalidad-vial-antioquia-valle
+
+# 1. Problema económico, pregunta y argumento
+
+La mortalidad vial constituye una problemática económica además de una emergencia de salud pública y movilidad. Cada fallecimiento implica una pérdida humana irreparable y puede representar, desde la perspectiva económica, la desaparición de años potenciales de trabajo, producción e ingresos. Sus efectos pueden extenderse a los hogares que dependían de la persona fallecida, al ingreso disponible familiar y a la capacidad productiva de los territorios. Sin embargo, el número de fallecidos por sí solo no permite estimar cuánto producto interno bruto (PIB) se pierde: para monetizar esa pérdida se necesitarían, entre otros datos, edad, ocupación, ingresos, participación laboral y una metodología explícita de valoración. En este trabajo, la pérdida de capital humano se plantea como un mecanismo económico relevante, no como un costo departamental ya cuantificado.
+
+La problemática también tiene una dimensión financiera. El mercado de seguros de automóviles recibe primas por la cobertura de riesgos y realiza pagos por reclamaciones cubiertas. La relación entre siniestros pagados y primas emitidas permite observar la siniestralidad del ramo y aproximarse a la presión que los pagos de reclamaciones representan frente a las primas observadas. Una siniestralidad alta puede tener implicaciones para los resultados técnicos de las aseguradoras y, junto con otros factores, para sus decisiones de tarifas, cobertura y aceptación de riesgos. No obstante, este indicador no equivale a rentabilidad: no incorpora todos los gastos, reservas, comisiones, reaseguros ni resultados de inversión.
+
+La pregunta de investigación es: **¿cómo se relacionan la evolución de la mortalidad vial y la siniestralidad del ramo de Automóviles con las posibles pérdidas de capital humano y las presiones económicas sobre el mercado asegurador en Antioquia y Valle del Cauca entre 2016 y 2024?** El análisis compara las trayectorias de ambos departamentos y explora si sus indicadores se mueven en direcciones similares, sin asumir que exista una relación causal.
+
+El argumento central es que la mortalidad vial puede generar costos económicos que exceden los pagos del seguro, mientras que la siniestralidad del ramo ofrece una perspectiva financiera parcial del riesgo cubierto. Ambas dimensiones pueden complementarse para el diagnóstico, pero no son equivalentes: los registros de mortalidad incluyen personas sin importar si estaban aseguradas o el tipo de vehículo, mientras que el ramo voluntario de Automóviles representa únicamente una parte del universo de riesgos viales. Por ello, una asociación entre indicadores no permite atribuir las muertes al mercado asegurador ni afirmar que cada fallecimiento se traduzca en un pago de seguro.
+
+# 2. Marco conceptual y revisión de literatura
+
+## Mortalidad vial y capital humano
+
+Desde la economía, el capital humano comprende conocimientos, habilidades, experiencia y capacidades que contribuyen a la producción y al bienestar. La muerte prematura puede interrumpir la participación laboral y la generación de ingresos, y también afectar a los hogares mediante la pérdida de una fuente de sustento. Los siniestros no fatales pueden producir costos adicionales asociados con atención médica, rehabilitación, ausentismo y pérdida temporal o permanente de capacidad laboral. Estos mecanismos permiten comprender por qué la mortalidad vial tiene una dimensión económica, aunque la base utilizada aquí no permite calcular el valor monetario de dichas pérdidas.
+
+Vivas Pacheco et al. (2023), en su estudio espacial de Cali, muestran la utilidad de considerar la heterogeneidad geográfica de las fatalidades y su relación con características del entorno. Su aporte para este trabajo es advertir que los promedios departamentales pueden ocultar diferencias entre municipios, zonas y corredores. Sánchez Corredor, Arango Uribe y Correa Álvarez (2026) estudian la carga social y la concentración espacio-temporal de los siniestros fatales en Medellín; su enfoque recuerda que el conteo agregado no describe por sí solo la distribución ni las consecuencias del fenómeno.
+
+## Mercado de seguros y siniestralidad
+
+Las primas emitidas son valores asociados a pólizas emitidas durante un periodo; los siniestros pagados son desembolsos por reclamaciones cubiertas. Su razón —siniestros pagados sobre primas emitidas— se utiliza como indicador de siniestralidad. Un aumento puede obedecer a mayores pagos, menores primas o cambios en la composición y temporalidad de la cartera. No necesariamente significa que haya aumentado la frecuencia de accidentes o la mortalidad: los pagos pueden corresponder a eventos ocurridos en periodos anteriores y a daños materiales o corporales de distinta severidad.
+
+La literatura sectorial de Fasecolda ofrece contexto sobre el seguro voluntario de vehículos y el perfil de sus asegurados (Cruz Villamil y Acosta, 2023; Cruz Villamil y Suárez, 2023). Estas publicaciones son referencias del sector y no constituyen, por sí solas, evidencia causal de la relación entre mortalidad y siniestralidad. Conceptualmente, las primas reflejan contratos, precios y composición de cartera; los pagos reflejan reclamaciones cubiertas y su calendario de liquidación. La razón entre ambos es un indicador técnico-financiero, no una tasa de accidentes ni una medida directa de lesiones o fallecimientos.
+
+# 3. Datos, definiciones y estrategia empírica
+
+Se integran registros de mortalidad vial departamental del Observatorio Nacional de Seguridad Vial (ONSV/ANSV), población del DANE y datos del ramo **Automóviles** del visualizador de Fasecolda. La ventana de análisis es 2016–2024. Los archivos de trabajo, sus filtros y la transformación de variables se documentan en el repositorio. Las cifras del Valle del Cauca transcritas visualmente a partir de las capturas aportadas por el grupo deben conservar su condición de dato pendiente de cotejo con la fuente original; no se presentan como una verificación institucional independiente.
+
+La tasa de mortalidad se calcula como:
+
+$$
+M_{dt}=\frac{F_{dt}}{P_{dt}}\times100.000,
+$$
+
+donde \(F_{dt}\) representa los fallecidos y \(P_{dt}\) la población del departamento \(d\) en el año \(t\). La tasa permite comparar territorios de distinto tamaño poblacional, aunque no controla por exposición vial, parque automotor ni kilómetros recorridos.
+
+La siniestralidad de diciembre se define como:
+
+$$
+S_{dt}^{Dec}=\frac{C_{dt}^{Dec}}{Pr_{dt}^{Dec}}\times100,
+$$
+
+donde \(C\) corresponde a siniestros pagados y \(Pr\) a primas emitidas. El filtro diciembre representa **el mes de diciembre como observación mensual**, no el acumulado enero–diciembre. El pago en diciembre tampoco implica que el siniestro haya ocurrido ese mes: fecha del accidente, fecha de reclamación y fecha de pago son conceptos distintos.
+
+La categoría **«usuario de vehículo»** del registro de víctimas no equivale a «conductor de automóvil asegurado»: puede agrupar distintos tipos de vehículos y ocupantes. Por ello no se utiliza como denominador de la cartera asegurada. Asimismo, el año del siniestro vial no debe confundirse con el año de pago de una reclamación ni con el año de emisión de una prima. Las bases disponibles no enlazan individualmente reclamaciones aseguradas con fallecimientos, de modo que el análisis es agregado y exploratorio.
+
+Las cifras monetarias se mantienen en pesos corrientes cuando no se dispone de una serie IPC documentada y aplicada de forma verificable. En consecuencia, el crecimiento nominal de primas o pagos no se interpreta como crecimiento real. La razón siniestros/primas es adimensional, pero puede cambiar por variaciones de precios, cobertura, composición de cartera y calendario de pagos.
+
+La estrategia empírica es descriptiva: se comparan tendencias, niveles y movimientos interanuales; se inspeccionan gráficos de líneas y dispersión; y, cuando se reportan correlaciones, se interpretan como asociaciones exploratorias. El tamaño de muestra anual es reducido y la diferencia entre la observación aseguradora de diciembre y la mortalidad del año completo limita cualquier interpretación contemporánea.
+
+# 4. Resultados y análisis económico
+
+Esta sección interpreta cada tabla y figura desde la problemática económica. Las dos tablas de síntesis se presentan como imágenes construidas a partir de la hoja `Tabla_central` del Excel. Las primas y los pagos se expresan en miles de millones de pesos corrientes; por tanto, su aumento nominal no equivale necesariamente a un crecimiento real. Los ejemplos numéricos ilustran la lectura económica de los indicadores y no deben interpretarse como evidencia causal.
+
+## Tabla 1. Indicadores integrados de Antioquia
+
+![Tabla 1. Indicadores anuales de mortalidad y seguro de Automóviles en Antioquia. Elaboración propia a partir de la hoja Tabla_central del Excel.](figuras/tabla_antioquia.png)
+
+**Lectura económica.** La tabla combina dos dimensiones distintas: la mortalidad vial del año completo y los resultados aseguradores observados en diciembre. La tasa contextualiza el número de fallecidos respecto de la población; la siniestralidad mide qué proporción de las primas emitidas en diciembre representan los pagos observados en ese mes. La primera permite dimensionar una pérdida potencial de capital humano; la segunda aproxima la presión de los pagos dentro del segmento asegurado.
+
+**Ejemplo.** Para 2024, Antioquia registra 1.110 fallecidos y una tasa cercana a 16,13 por cada 100.000 habitantes. Económicamente, esto representa una carga humana que puede interrumpir años de trabajo e ingresos de hogares. La tabla no permite monetizar esa pérdida ni estimar cuánto PIB departamental se dejó de producir: para ello se necesitarían datos de edad, ocupación, empleo e ingresos, además de un método de valoración. La siniestralidad de diciembre debe interpretarse aparte y no como costo de esas 1.110 muertes.
+
+## Tabla 2. Indicadores integrados del Valle del Cauca
+
+![Tabla 2. Indicadores anuales de mortalidad y seguro de Automóviles en Valle del Cauca. Elaboración propia a partir de la hoja Tabla_central del Excel.](figuras/tabla_valle.png)
+
+**Lectura económica.** La tabla permite contrastar los indicadores del Valle con Antioquia, sin atribuir diferencias únicamente a la seguridad vial. Los departamentos pueden diferir en población, parque automotor, composición de usuarios, penetración del seguro, cobertura, tarifas y exposición al tránsito. La tasa mejora la comparación por tamaño poblacional, aunque no ajusta por kilómetros recorridos ni por vehículos en circulación.
+
+**Ejemplo.** En 2024, la tasa del Valle del Cauca es aproximadamente 19,03 por cada 100.000 habitantes, frente a 16,13 en Antioquia. Esto señala una mortalidad relativa por población mayor en el Valle ese año y, por tanto, una carga potencial de pérdida de capital humano más alta por habitante. No demuestra que el Valle pierda más PIB ni que las aseguradoras paguen más por cada fallecido.
+
+## Figura 1. Conteo anual de fallecidos
+
+![Figura 1. Conteo anual de fallecidos viales en Antioquia y Valle del Cauca, 2016–2024.](figuras/mortalidad_conteo.png)
+
+**Interpretación económica.** El conteo muestra la escala absoluta de las vidas perdidas. Un valor mayor puede implicar una pérdida potencial mayor de capacidad laboral y de ingresos familiares, aunque el impacto depende de la edad, la ocupación y la situación laboral de las personas fallecidas. La caída de 2020 y el repunte posterior son patrones observados; el gráfico por sí solo no identifica sus causas.
+
+**Ejemplo.** Si los fallecimientos aumentan en un año, la interpretación defendible es que se incrementa el número de vidas y trayectorias laborales interrumpidas. No se puede convertir ese aumento automáticamente en una disminución del PIB sin datos de productividad e ingresos.
+
+## Figura 2. Tasa de mortalidad por cada 100.000 habitantes
+
+![Figura 2. Tasa de mortalidad vial por cada 100.000 habitantes, 2016–2024.](figuras/mortalidad_tasa.png)
+
+**Interpretación económica.** La tasa ajusta el conteo por el tamaño poblacional y facilita comparar la intensidad relativa del fenómeno. Puede apoyar la priorización territorial, aunque no es una medida completa del riesgo por viaje o por kilómetro recorrido.
+
+**Ejemplo.** La tasa del Valle en 2024 supera la de Antioquia. Para una gobernación, esto puede motivar una revisión de corredores, actores viales y estrategias de prevención. La asignación de recursos debería incorporar además exposición, severidad, distribución municipal y costo-efectividad de las intervenciones.
+
+## Figura 3. Primas emitidas y siniestros pagados en diciembre
+
+![Figura 3. Primas emitidas y siniestros pagados de diciembre en pesos corrientes.](figuras/primas_pagos.png)
+
+**Interpretación económica.** Las primas son valores asociados a pólizas emitidas; los pagos son desembolsos por reclamaciones cubiertas. La comparación describe la escala financiera del ramo, pero no equivale a utilidad o pérdida, pues faltan gastos administrativos, comisiones, reservas, reaseguro y otros componentes. Los pagos de diciembre también pueden corresponder a siniestros ocurridos antes.
+
+**Ejemplo.** Si los pagos crecen relativamente más que las primas, la siniestralidad tendería a subir y los pagos representarían una fracción mayor de las primas observadas. Esto podría presionar el resultado técnico y ser relevante para análisis de tarifas, pero no prueba que haya aumentado la mortalidad ni que el ramo esté perdiendo dinero.
+
+## Figura 4. Siniestralidad del ramo Automóviles
+
+![Figura 4. Siniestros pagados sobre primas emitidas, observados en diciembre.](figuras/siniestralidad.png)
+
+**Interpretación económica.** El indicador mide el peso proporcional de los pagos dentro de las primas emitidas observadas. Puede aumentar por mayores pagos, menores primas o cambios en cartera y calendario de liquidación. Una siniestralidad alta y persistente podría presionar el resultado técnico, pero no es una medida completa de rentabilidad.
+
+**Ejemplo ilustrativo.** Una siniestralidad de 60% significa que por cada 100 pesos de primas emitidas en el periodo observado, se registraron 60 pesos de pagos por siniestros. No significa que la aseguradora gane los 40 pesos restantes, porque todavía debe cubrir otros costos y obligaciones. El ejemplo explica la razón matemática; no se atribuye a un año concreto.
+
+## Figura 5. Dispersión entre siniestralidad y tasa de mortalidad
+
+![Figura 5. Diagrama de dispersión por departamento; cada punto representa un año.](figuras/dispersion.png)
+
+**Interpretación económica.** La dispersión permite explorar si los años con mayor mortalidad relativa coinciden con mayor siniestralidad. Una asociación positiva sería compatible con riesgos parcialmente compartidos, pero no demostraría que las fatalidades causen pagos mayores. Si la relación es débil o inversa, puede reflejar diferencias de cobertura, composición de vehículos, siniestros materiales no fatales o desfases entre ocurrencia y pago.
+
+**Ejemplo.** Puede haber un año de mortalidad alta y siniestralidad baja si una parte importante de las víctimas son usuarios no cubiertos por el seguro voluntario de Automóviles o si las reclamaciones se pagan en otros periodos. También pueden aumentar los pagos por choques con daños materiales sin que crezcan proporcionalmente los fallecimientos.
+
+## ¿Se mueven juntas las series en ambos departamentos?
+
+La comparación de las figuras 4 y 5 y de las tablas 1 y 2 debe establecer, para cada departamento, si los cambios de mortalidad y siniestralidad van en la misma dirección y si el patrón se repite entre territorios. No debe afirmarse que ambas series suben o bajan juntas sin verificarlo año por año. La asociación puede diferir porque las series no miden el mismo universo.
+
+En Antioquia, el dato de 2024 incluido en el trabajo indica 695 motociclistas entre 1.110 fallecidos. Esta composición ilustra una costura central del análisis: la mortalidad vial incluye distintos actores y vehículos, mientras que el indicador asegurador corresponde al ramo voluntario de Automóviles. En consecuencia, pueden estar midiendo riesgos diferentes; la ausencia de correlación no sería sorprendente.
+
+Las correlaciones preliminares de Antioquia en niveles —aproximadamente 0,74 entre primas de diciembre y fallecidos anuales y 0,76 entre pagos de diciembre y fallecidos, n=9— corresponden al avance y no deben extrapolarse al Valle del Cauca ni presentarse como una estimación final conjunta. En cambios interanuales, la asociación preliminar fue menor (aproximadamente 0,44 y 0,10, n=8). Son estadísticas exploratorias, sensibles a tendencias, años atípicos y la diferencia temporal entre diciembre y el año completo. Todo coeficiente definitivo debe reproducirse con los archivos finales y reportarse por departamento.
+
+En síntesis, las tablas y figuras permiten examinar dos dimensiones complementarias: (i) la pérdida potencial de capital humano vinculada con la mortalidad vial y (ii) la dinámica financiera parcial del seguro voluntario de Automóviles. Los pagos de seguros no miden el costo social total, y la mortalidad no determina por sí sola la siniestralidad. El análisis identifica patrones y diferencias, pero no una relación causal.
+
+# 5. Implicaciones, límites y conclusión
+
+Los resultados pueden ser relevantes para la **Agencia Nacional de Seguridad Vial (ANSV)** y las gobernaciones de Antioquia y Valle del Cauca. Desde la política de seguridad vial, los indicadores de fallecidos y tasas permiten dimensionar el problema y orientar la necesidad de prevención; desde la perspectiva económica, la mortalidad puede implicar pérdidas de capital humano y afectaciones a los hogares. La siniestralidad del ramo Automóviles añade una perspectiva financiera parcial del riesgo asegurado, pero no debe utilizarse como sustituto de la mortalidad ni como criterio único para asignar recursos públicos.
+
+Para que la evidencia apoye decisiones concretas, sería necesario contar con datos comparables y más granulares: mortalidad y reclamaciones por mes y territorio; fechas diferenciadas de ocurrencia, reclamación y pago; tipo de vehículo y actor vial; número de vehículos asegurados y exposición (por ejemplo, vehículos-kilómetro); coberturas; y valores monetarios ajustados por IPC con una base explícita. Un enlace anonimizado entre reclamaciones aseguradas y registros de víctimas, o una estrategia con mayor desagregación temporal y territorial, permitiría evaluar mejor la relación. Para cuantificar pérdidas de productividad también harían falta variables de edad, ocupación, empleo e ingresos y un método de valoración transparente.
+
+En síntesis, la mortalidad vial es una problemática con consecuencias humanas y potenciales costos económicos por pérdida de capital humano. El mercado de seguros de Automóviles permite observar cómo se relacionan las primas emitidas y los siniestros pagados dentro de un segmento asegurado, pero no captura el costo social total de los siniestros ni la totalidad de las víctimas. La comparación entre Antioquia y Valle del Cauca explora si la mortalidad y la siniestralidad presentan trayectorias similares; cualquier asociación observada es descriptiva y está limitada por la pequeña muestra, la diferencia entre la observación de diciembre y el año completo, la cobertura desigual y la ausencia de enlace individual. La conclusión defendible es que **el mercado asegurador puede complementar el diagnóstico económico de la mortalidad vial, pero no medir por sí solo la pérdida de productividad ni explicar causalmente las fatalidades**.
+
+## Declaración de uso de inteligencia artificial y cuadro de herramientas
+
+La IA se utilizó como copiloto de investigación y escritura, no como sustituto de las decisiones del autor. La siguiente tabla registra seis áreas de uso; debe cotejarse con el historial real de trabajo y ajustarse si alguna actividad no ocurrió.
+
+| Sección / tarea | Herramienta y apoyo recibido | Decisión y verificación humana |
+|---|---|---|
+| 1. Problema y pregunta | ChatGPT ayudó a ordenar el planteamiento, explicitar el cambio desde Medellín–Cali y formular una pregunta compatible con los datos. | El autor seleccionó la pregunta y revisó que no prometiera identificación causal. |
+| 2. Literatura | ChatGPT apoyó la organización temática y la localización inicial de referencias. | Se deben verificar metadatos, DOI, contenido y pertinencia en las fuentes editoriales antes de la entrega. |
+| 3. Datos y método | ChatGPT ayudó a describir variables, fórmulas, ventanas temporales y limitaciones. | El autor debe cotejar filtros, cifras, fuente, fecha de consulta y fórmulas con los archivos originales. |
+| 4. Análisis | ChatGPT apoyó la interpretación preliminar de tablas, gráficos y correlaciones. | Los resultados numéricos deben ser reproducidos por el script; la interpretación final corresponde al autor. |
+| 5. Implicación | ChatGPT ayudó a estructurar opciones para ANSV y gobernaciones. | El autor decide qué recomendación es proporcional a la evidencia y qué datos faltan. |
+| Reproducibilidad y edición | ChatGPT apoyó la edición del QMD, depuración de fórmulas y organización del repositorio. | El autor debe compilar en otro equipo y revisar el PDF; la URL pública del repositorio ya está incluida en la portada. |
+
+No se recibieron observaciones de la Ronda 2 del grupo par; por tanto, no se incorporan comentarios ficticios. Esta declaración debe completarse con las fechas, consultas y verificaciones efectivamente realizadas por el autor. La revisión final del contenido, las cifras y las decisiones metodológicas es responsabilidad de Samuel Suárez.
+
+# Referencias
+
+Cruz Villamil, J., y Acosta, J. (2023). La paradoja del seguro voluntario de vehículos: alto riesgo y baja penetración. *Revista Fasecolda*, (191), 94–100.
+
+Cruz Villamil, J., y Suárez, M. (2023). Seguro voluntario de vehículos: el perfil del asegurado. *Revista Fasecolda*, (190), 34–41.
+
+Sánchez Corredor, J., Arango Uribe, S., y Correa Álvarez, J. (2026). Quantifying the Social Burden and Spatiotemporal Concentration of Fatal Road Traffic Incidents in Medellín (2008–2025). *Sustainability, 18*(5), 2628. https://doi.org/10.3390/su18052628
+
+Vivas Pacheco, J. A., et al. (2023). Traffic Fatalities and Urban Infrastructure: A Spatial Variability Study Using Geographically Weighted Poisson Regression Applied in Cali (Colombia). *Safety, 9*(2), 34. https://doi.org/10.3390/safety9020034
