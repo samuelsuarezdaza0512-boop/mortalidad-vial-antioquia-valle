@@ -1,0 +1,154 @@
+---
+title: "Siniestralidad del seguro de automóviles y mortalidad vial en Antioquia y Valle del Cauca, 2016–2024"
+author: "Samuel Suárez"
+date: "noviembre de 2026"
+lang: es
+format:
+  pdf:
+    pdf-engine: xelatex
+    documentclass: article
+    geometry: margin=2.2cm
+    mainfont: "Times New Roman"
+    fontsize: 10.5pt
+    number-sections: true
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage{setspace}
+        \setstretch{1.08}
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{caption}
+        \captionsetup{font=small}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(stringr)
+
+# Se espera que el archivo se encuentre en datos/
+archivo_mortalidad <- "datos/Datos_Antioquia_ValleDelCauca.xlsx"
+archivo_complementario <- "datos/Datos_Siniestros_Viales_v2.xlsx"
+```
+
+**Repositorio reproducible:** [añadir URL pública del repositorio GitHub antes de entregar]
+
+# 1. Problema, pregunta y argumento
+
+La seguridad vial es un problema público y económico: los fallecimientos generan pérdidas humanas irreparables y costos sociales que no quedan reflejados completamente en las transacciones del mercado asegurador. La investigación comenzó con una pregunta formulada el **31 de julio de 2026** sobre Medellín: ¿qué proporción de las muertes viales se explica por conductas de riesgo y qué proporción por las características del entorno construido? La pregunta original se conserva como antecedente, pero los datos reunidos no permiten descomponer causalmente esas contribuciones. Para hacerlo se requerirían datos de exposición, conducta e infraestructura a nivel de corredor vial y una estrategia de identificación.
+
+Por disponibilidad y trazabilidad de datos, el proyecto se reformuló. La pregunta que guía este paper es: **¿cómo evolucionaron la siniestralidad del seguro de automóviles —siniestros pagados sobre primas emitidas— y la tasa de mortalidad vial por cada 100.000 habitantes en Antioquia y Valle del Cauca entre 2016 y 2024, y qué similitudes y diferencias se observan?**
+
+La tesis es que **la siniestralidad del ramo Automóviles puede complementar, pero no sustituir, los indicadores de mortalidad vial**. Ambas series podrían moverse conjuntamente en ciertos períodos, pero miden poblaciones y riesgos distintos: la mortalidad incluye víctimas sin importar aseguramiento ni tipo de vehículo; el seguro voluntario de automóviles observa el segmento asegurado cubierto por ese ramo. Por tanto, una correlación contemporánea no prueba que el seguro explique la mortalidad, ni que sus cambios anticipen el riesgo vial general.
+
+# 2. Literatura y marco conceptual
+
+La seguridad vial resulta de la interacción entre usuarios, vehículos, infraestructura y condiciones institucionales. Vivas Pacheco et al. (2023), en su estudio espacial de Cali, muestran la utilidad de analizar heterogeneidad geográfica en la distribución de fatalidades y su relación con características del entorno. Su aporte para este trabajo es advertir que una comparación departamental agregada puede ocultar diferencias entre zonas y corredores. Sánchez Corredor, Arango Uribe y Correa Álvarez (2026) estudian la carga social y la concentración espacio-temporal de los siniestros fatales en Medellín; su enfoque refuerza que el conteo de muertes no resume por sí solo la distribución ni las consecuencias del fenómeno.
+
+La literatura sectorial de Fasecolda ofrece contexto sobre el seguro voluntario de vehículos y el perfil de sus asegurados (Cruz Villamil y Acosta, 2023; Cruz Villamil y Suárez, 2023). Estas publicaciones son referencias del sector, no evidencia causal independiente. Conceptualmente, las primas emitidas reflejan contratos, precios y composición de cartera; los siniestros pagados reflejan pagos realizados por reclamaciones cubiertas, que pueden corresponder a hechos ocurridos en fechas anteriores. La razón entre ambos es un indicador técnico-financiero, no una tasa de accidentes ni una medida directa de lesiones o fallecimientos.
+
+# 3. Datos, definiciones y estrategia empírica
+
+Se integran registros de mortalidad vial departamental del Observatorio Nacional de Seguridad Vial (ONSV/ANSV), población del DANE y datos del ramo **Automóviles** del visualizador de Fasecolda. La ventana de análisis es 2016–2024. Las fuentes y los archivos originales se conservan en el repositorio; la hoja de cálculo y el script documentan la transformación de cada variable.
+
+La tasa de mortalidad se calcula como:
+
+$$
+M_{dt}=\frac{F_{dt}}{P_{dt}}\times100.000,
+$$
+
+donde \(F_{dt}\) son fallecidos y \(P_{dt}\) es la población del departamento \(d\) en el año \(t\).
+
+La siniestralidad mensual de diciembre se define como:
+
+$$
+S_{dt}^{Dec}=\frac{C_{dt}^{Dec}}{Pr_{dt}^{Dec}}\times100,
+$$
+
+donde \(C\) son siniestros pagados y \(Pr\) primas emitidas. El filtro diciembre representa **el mes de diciembre como observación mensual**, no un acumulado enero–diciembre. El pago en diciembre tampoco implica que el siniestro haya ocurrido en diciembre: fecha del accidente y fecha de pago son conceptos distintos. Antes de comparar las series, la lectura temporal debe conservarse explícita.
+
+La categoría **«usuario de vehículo»** del registro de víctimas no equivale a «conductor de automóvil asegurado»: puede agrupar distintos tipos de vehículos y ocupantes. Por ello no se utiliza como denominador de la cartera asegurada. Asimismo, el **año del siniestro** (cuando se registra el evento vial) no debe confundirse con el año de pago de una reclamación ni con el año de emisión de una prima. Las bases disponibles no enlazan individualmente siniestros asegurados con fallecimientos, de modo que el análisis es agregado y exploratorio.
+
+Las cifras monetarias se mantienen en pesos corrientes cuando no se dispone de una serie IPC documentada y aplicada de forma verificable. En consecuencia, el crecimiento nominal de primas o pagos no se interpreta como crecimiento real. La razón siniestros/primas es adimensional, pero puede cambiar por variaciones de precios, cobertura, composición de cartera, reservas y calendario de pagos.
+
+# 4. Resultados: trayectorias y asociación exploratoria
+
+La gráfica de mortalidad muestra trayectorias departamentales diferentes. Antioquia registra un descenso marcado en 2020 y un aumento posterior hasta ubicarse por encima de 1.100 fallecidos en 2023–2024. Valle del Cauca también cae en 2020, pero su recuperación posterior es menos pronunciada y permanece por debajo de los niveles de Antioquia en los años finales. Esta comparación de conteos debe leerse junto con las tasas por 100.000 habitantes, porque el tamaño poblacional no es idéntico.
+
+La asociación entre las variables aseguradoras y la mortalidad se evalúa mediante diagramas de dispersión y correlación de Pearson como resumen descriptivo, no como estimación causal. En los datos de Antioquia usados en el avance, la correlación en niveles fue aproximadamente \(r=0,74\) entre primas de diciembre y fallecidos anuales, y \(r=0,76\) entre siniestros pagados de diciembre y fallecidos anuales (\(n=9\)). Estas asociaciones positivas son sensibles a tendencias comunes y a la observación extrema de 2020; por sí solas no demuestran una relación estructural. La correlación entre cambios interanuales fue menor: alrededor de \(r=0,44\) para primas y fallecidos, y \(r=0,10\) para pagos y fallecidos (\(n=8\)). Esto debilita la lectura de que los cambios de corto plazo se muevan estrechamente juntos.
+
+La comparación entre departamentos debe realizarse con el ramo Automóviles disponible para cada uno, no extrapolando la serie de Antioquia al Valle. Si una serie departamental aseguradora está incompleta, el resultado correspondiente se reporta como no estimable, no se rellena ni se sustituye por el dato de otro territorio. En 2024, Antioquia registró 1.110 fallecidos y 695 eran motociclistas, según el dato incorporado en la retroalimentación docente. Esta composición ilustra una diferencia sustantiva: el seguro voluntario de automóviles no cubre el conjunto de riesgos que generan la mortalidad vial, especialmente cuando predominan usuarios de motocicleta.
+
+**Lectura de las figuras.** Las líneas temporales describen evolución; los diagramas de dispersión permiten observar asociación y posibles puntos influyentes. El coeficiente \(r\) resume asociación lineal en una muestra pequeña, no controla por población, parque automotor, inflación, composición de asegurados ni cambios institucionales. Tampoco identifica dirección causal. Si las líneas no coinciden o la asociación desaparece en diferencias, la conclusión correcta es que no se observa un patrón robusto con esta especificación.
+
+```{r}
+#| label: tabla-mortalidad
+#| tbl-cap: "Mortalidad vial departamental, fallecidos y tasa por 100.000 habitantes"
+#| results: asis
+# El bloque espera una tabla central limpia que se genere en scripts/analisis.R
+# con columnas: departamento, anio, fallecidos, poblacion, tasa_mortalidad.
+if (file.exists("datos/tabla_central.csv")) {
+  tab <- read.csv("datos/tabla_central.csv")
+  knitr::kable(tab, digits=2, booktabs=TRUE)
+} else {
+  cat("La tabla central se genera desde los Excel de origen mediante el script de análisis del repositorio.")
+}
+```
+
+```{r}
+#| label: figura-mortalidad
+#| fig-cap: "Fallecidos en siniestros viales por departamento, 2016–2024. Fuente: ONSV/ANSV; elaboración propia."
+#| fig-width: 6.4
+#| fig-height: 3.6
+if (file.exists("datos/tabla_central.csv")) {
+  tab <- read.csv("datos/tabla_central.csv")
+  ggplot(tab, aes(x=anio, y=fallecidos, color=departamento)) +
+    geom_line(linewidth=.8) + geom_point(size=2) +
+    labs(x="Año", y="Fallecidos", color="Departamento") +
+    theme_minimal()
+}
+```
+
+# 5. Implicaciones, límites y conclusión
+
+El decisor al que estos resultados pueden servir es la **Agencia Nacional de Seguridad Vial (ANSV)**, en coordinación con las gobernaciones de Antioquia y Valle del Cauca. La evidencia disponible no justifica asignar recursos de seguridad vial según la siniestralidad de Automóviles ni tratarla como indicador adelantado de muertes. Sí permite plantear una decisión de información: mantener el monitoreo de mortalidad por actor vial y territorio, y explorar si los datos agregados del seguro aportan una señal complementaria para el segmento de automóviles.
+
+Para que el hallazgo sea útil en una decisión concreta, harían falta datos comparables por mes y territorio; definición uniforme de la fecha del accidente, reclamación y pago; exposición (vehículos-kilómetro o parque automotor); cobertura y tipo de vehículo asegurado; desagregación por actor vial; y ajuste de valores monetarios por IPC con base explícita. Un enlace anonimizado entre siniestros asegurados y registros de víctimas, o una estrategia temporal y territorial más granular, permitiría evaluar mejor la relación. En ausencia de esos elementos, el resultado es descriptivo y no identifica causalidad ni la proporción de muertes atribuible al seguro, a la conducta o a la infraestructura.
+
+En síntesis, las series de mortalidad de Antioquia y Valle del Cauca describen un problema persistente con trayectorias territoriales distintas. La siniestralidad del ramo Automóviles ofrece una perspectiva financiera parcial. La evidencia exploratoria de Antioquia muestra correlación en niveles, pero una asociación más débil en variaciones; el tamaño muestral, la ventana mensual de diciembre y la diferencia de población cubierta impiden afirmar que ambas dimensiones se muevan juntas de forma estable. La conclusión más defendible es que **el mercado asegurador puede complementar el diagnóstico, pero no reemplazar la medición de seguridad vial ni identificar por sí solo sus mecanismos**.
+
+## Declaración de uso de inteligencia artificial y cuadro de herramientas
+
+La IA se utilizó como copiloto de investigación y escritura, no como sustituto de las decisiones del autor. La siguiente tabla registra seis áreas de uso; debe cotejarse con el historial real de trabajo y ajustarse si alguna actividad no ocurrió.
+
+| Sección / tarea | Herramienta y apoyo recibido | Decisión y verificación humana |
+|---|---|---|
+| 1. Problema y pregunta | ChatGPT ayudó a ordenar el planteamiento, explicitar el cambio desde Medellín–Cali y formular una pregunta compatible con los datos. | El autor seleccionó la pregunta y revisó que no prometiera identificación causal. |
+| 2. Literatura | ChatGPT apoyó la organización temática y la localización inicial de referencias. | Se deben verificar metadatos, DOI, contenido y pertinencia en las fuentes editoriales antes de la entrega. |
+| 3. Datos y método | ChatGPT ayudó a describir variables, fórmulas, ventanas temporales y limitaciones. | El autor debe cotejar filtros, cifras, fuente, fecha de consulta y fórmulas con los archivos originales. |
+| 4. Análisis | ChatGPT apoyó la interpretación preliminar de tablas, gráficos y correlaciones. | Los resultados numéricos deben ser reproducidos por el script; la interpretación final corresponde al autor. |
+| 5. Implicación | ChatGPT ayudó a estructurar opciones para ANSV y gobernaciones. | El autor decide qué recomendación es proporcional a la evidencia y qué datos faltan. |
+| Reproducibilidad y edición | ChatGPT apoyó la edición del QMD, depuración de fórmulas y organización del repositorio. | El autor debe compilar en otro equipo, revisar el PDF y completar la URL real de GitHub. |
+
+No se recibieron observaciones de la Ronda 2 del grupo par; por tanto, no se incorporan comentarios ficticios. Esta declaración debe completarse con las fechas, consultas y verificaciones efectivamente realizadas por el autor. La revisión final del contenido, las cifras y las decisiones metodológicas es responsabilidad de Samuel Suárez.
+
+# Referencias
+
+Cruz Villamil, J., y Acosta, J. (2023). La paradoja del seguro voluntario de vehículos: alto riesgo y baja penetración. *Revista Fasecolda*, (191), 94–100.
+
+Cruz Villamil, J., y Suárez, M. (2023). Seguro voluntario de vehículos: el perfil del asegurado. *Revista Fasecolda*, (190), 34–41.
+
+Sánchez Corredor, J., Arango Uribe, S., y Correa Álvarez, J. (2026). Quantifying the Social Burden and Spatiotemporal Concentration of Fatal Road Traffic Incidents in Medellín (2008–2025). *Sustainability, 18*(5), 2628. https://doi.org/10.3390/su18052628
+
+Vivas Pacheco, J. A., et al. (2023). Traffic Fatalities and Urban Infrastructure: A Spatial Variability Study Using Geographically Weighted Poisson Regression Applied in Cali (Colombia). *Safety, 9*(2), 34. https://doi.org/10.3390/safety9020034
